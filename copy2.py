@@ -1,15 +1,17 @@
-from time import sleep
-import pandas as pd
+# from time import sleep
+# import pandas as pd
 from bs4 import BeautifulSoup
 import requests
+from openpyxl import load_workbook
 
 def make_hyperlink(link,text):
     return '=HYPERLINK("%s", "%s")' % (link, text)
 
 def getDetails(profile_link):
-    response = requests.get(profile_link, timeout=5)
+    response = requests.get(profile_link, timeout=10)
     soup = BeautifulSoup(response.content, 'html.parser')
     container = soup.find(attrs={'data-test': 'agent-bio'}).find(attrs={'class':'noprint'})
+    
     # get agent name
     agent_name = container.find('h1',attrs={'class':'h2 mt-6'}).get_text(strip=True)
     # get profile picture
@@ -19,7 +21,6 @@ def getDetails(profile_link):
     # print(profile_picture['data-src'])
 
     #old profile picture code
-
     # profile_picture = container.find('img',attrs={'class':'mb-4 photo-max-height'}).get('src') if container.find('img',attrs={'class':'mb-4 photo-max-height'}) else ""
     # get phone numbers
     phones_container = container.find('div', attrs={'class': 'bio-phone mb-8 lg:mb-0'})
@@ -48,40 +49,48 @@ def getDetails(profile_link):
     return [agent_name, agent_phones, website_link, social_links, agent_language, make_hyperlink(location_link, address)]
 
 
-# url = 'https://www.remax.com/real-estate-agents/-ca?filters={"page":1,"count":"96","sortBy":"lastName"}'
-
 def getPageData(url):
     response = requests.get(url,timeout=5)
     soup = BeautifulSoup(response.content, 'html.parser')
     container = soup.find(attrs={'class': 'roster-container'})
+
+    i=1
     data = []
-    i = 1
     for div in container.find_all('div', recursive=False):
-        print(i)
         i+=1
+        print(i)
         agent_profile_link = f"https://www.remax.com{div.find(attrs=    {'data-test':'agent-card-name'}).get('href')}"
         data.append(getDetails(agent_profile_link))
-        
-    return  data
+    
+    wb_append = load_workbook("agent_data2.xlsx")
+    sheet = wb_append.active
+    for i in data:
+        sheet.append(i)
+    wb_append.save('agent_data2.xlsx')
+    print('done')
 
-response = requests.get("https://www.remax.com/real-estate-agents/-ca", timeout=5)
-soup = BeautifulSoup(response.content, 'html.parser')
-# container = soup.find(attrs={'data-test': 'agent-card-img'}).find('a')
-# profile_picture = container.find('img')
-# print(profile_picture['data-src'])
+    # df = pd.DataFrame(data, columns=["AGENT NAME", "PHONE NUMBERS", "WEBSITE LINK", "SOCIAL MEDIA LINKS", "LANGUAGE", "ADDRESS"])
+    # df.to_excel("agent_temp_data.xlsx", index=False)
 
+    # agent_data = pd.read_excel('agent_data2.xlsx')
+    # agent_temp_data = pd.read_excel('agent_temp_data.xlsx')
+   
+    # combine_data = pd.concat([agent_data,agent_temp_data], index=False)
+    # combine_data.to_excel("agent_data2.xlsx", index=False)
 
+response = requests.get("https://www.remax.com/real-estate-agents/-ca", timeout=10)
+soup = BeautifulSoup(response.content, 'html.parser')    
 totalRecords = soup.find(attrs={'class': 'roster-sort-container'}).find('h4',attrs={'class':'mr-3'}).get_text(strip=True)
 totalRecords = int(totalRecords[0:5].replace(',',""))
 totalPages = totalRecords//96+1
 
 
 allData = []
-for i in range(1,totalPages):
-    print('url: '+str(i))
-    url = f'https://www.remax.com/real-estate-agents/-ca?filters={{"page":{i},"count":"96","sortBy":"lastName"}}'
-    tempData = getPageData(url)
-    allData.extend(tempData)
+# df = pd.DataFrame(allData, columns=["AGENT NAME", "PHONE NUMBERS", "WEBSITE LINK", "SOCIAL MEDIA LINKS", "LANGUAGE", "ADDRESS"])
+# df.to_excel("agent_data2.xlsx", index=False)
 
-df = pd.DataFrame(allData, columns=["AGENT NAME", "PHONE NUMBERS", "WEBSITE LINK", "SOCIAL MEDIA LINKS", "LANGUAGE", "ADDRESS"])
-df.to_excel("agent_data.xlsx", index=False)
+for i in range(18,totalPages):
+    print("url: "+str(i))
+    url = f'https://www.remax.com/real-estate-agents/-ca?filters={{"page":{i},"count":"96","sortBy":"lastName"}}'
+    getPageData(url)
+    

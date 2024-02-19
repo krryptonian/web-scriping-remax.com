@@ -13,13 +13,6 @@ def getDetails(profile_link):
     # get agent name
     agent_name = container.find('h1',attrs={'class':'h2 mt-6'}).get_text(strip=True)
     # get profile picture
-
-    # profileContainer = container.find(attrs={'class': 'col md:max-w-1/2 lg:max-w-full'})
-    # profile_picture = profileContainer.find('img')
-    # print(profile_picture['data-src'])
-
-    #old profile picture code
-
     # profile_picture = container.find('img',attrs={'class':'mb-4 photo-max-height'}).get('src') if container.find('img',attrs={'class':'mb-4 photo-max-height'}) else ""
     # get phone numbers
     phones_container = container.find('div', attrs={'class': 'bio-phone mb-8 lg:mb-0'})
@@ -54,32 +47,18 @@ def getPageData(url):
     response = requests.get(url,timeout=5)
     soup = BeautifulSoup(response.content, 'html.parser')
     container = soup.find(attrs={'class': 'roster-container'})
+
     data = []
-    i = 1
     for div in container.find_all('div', recursive=False):
-        print(i)
-        i+=1
         agent_profile_link = f"https://www.remax.com{div.find(attrs=    {'data-test':'agent-card-name'}).get('href')}"
         data.append(getDetails(agent_profile_link))
-        
+    print(data)
     return  data
 
-response = requests.get("https://www.remax.com/real-estate-agents/-ca", timeout=5)
-soup = BeautifulSoup(response.content, 'html.parser')
-# container = soup.find(attrs={'data-test': 'agent-card-img'}).find('a')
-# profile_picture = container.find('img')
-# print(profile_picture['data-src'])
-
-
-totalRecords = soup.find(attrs={'class': 'roster-sort-container'}).find('h4',attrs={'class':'mr-3'}).get_text(strip=True)
-totalRecords = int(totalRecords[0:5].replace(',',""))
-totalPages = totalRecords//96+1
-
-
 allData = []
-for i in range(1,totalPages):
+for i in range(1,3):
     print('url: '+str(i))
-    url = f'https://www.remax.com/real-estate-agents/-ca?filters={{"page":{i},"count":"96","sortBy":"lastName"}}'
+    url = f'https://www.remax.com/real-estate-agents/-ca?filters={{"page":{i},"count":"24","sortBy":"lastName"}}'
     tempData = getPageData(url)
     allData.extend(tempData)
 
